@@ -39,16 +39,17 @@ This project implements a <b>B+ Tree</b> data structure with a complete set of o
 Unlike many B+ Tree implementations that traverse from root for every operation, this implementation stores <b>parent pointers</b> in every node. This optimization simplifies the split and merge propagation logic, eliminating the need to search for parent nodes during rebalancing operations.
 </p>
 
-python
+
 class BPlusNode:
     def __init__(self, is_leaf=False):
         self.keys = []          # Sorted keys in the node
         self.children = []      # Child pointers (internal nodes only)
         self.is_leaf = is_leaf  # Node type flag
         self.next = None        # Next leaf pointer (leaf-level linked list)
-        self.parent = None      # Parent reference for upward traversal
+        self.parent = None      # Parent reference for upward traversal 
+        
 <h3>2️⃣ Intelligent Leaf Split with Key Promotion</h3> <p> When a leaf node exceeds <code>max_keys</code>, it splits into two nodes. The <b>first key</b> of the right leaf is promoted upward to become a routing key in the parent. This design ensures that internal nodes never store duplicate keys (unlike some implementations that push the middle key up). </p>
-python
+
 def _split_leaf(self, leaf):
     mid = len(leaf.keys) // 2
     new_leaf = BPlusNode(is_leaf=True)
@@ -61,6 +62,7 @@ def _split_leaf(self, leaf):
     
     # Promote the first key of new leaf to parent
     self._insert_into_parent(leaf, new_leaf.keys[0], new_leaf)
+    
 <h3>3️⃣ Internal Node Split (Key Pushing)</h3> <p> Internal nodes follow a different splitting strategy: the <b>middle key is pushed up</b> to the parent (not copied), while the remaining keys are distributed between the two new internal nodes. This preserves the invariant that internal nodes contain only routing keys. </p>
 python
 def _split_internal(self, node):
