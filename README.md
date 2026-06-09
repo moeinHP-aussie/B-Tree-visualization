@@ -38,7 +38,6 @@ This project implements a <b>B+ Tree</b> data structure with full insert, delete
 Each node (internal or leaf) stores a sorted list of keys and maintains parent pointers to simplify splits and merges. Leaf nodes additionally hold a <code>next</code> pointer to form a singly linked list.
 </p>
 
-```python
 class BPlusNode:
     def __init__(self, is_leaf=False):
         self.keys = []          # sorted keys
@@ -46,6 +45,7 @@ class BPlusNode:
         self.is_leaf = is_leaf
         self.next = None        # next leaf node
         self.parent = None      # parent reference
+
 <h3>2️⃣ Insertion & Split Logic</h3> <p> When a leaf exceeds <code>max_keys</code>, it splits into two leaves. The <b>first key</b> of the new right leaf is promoted up to the parent. For internal nodes, the <b>middle key</b> is pushed up (not copied), and the node is split into two. The propagation continues recursively up the tree. </p>
 python
 def _split_leaf(self, leaf):
