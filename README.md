@@ -58,26 +58,6 @@ This project is suitable for:
 
 ---
 
-## 🖼 Screenshots
-
-### Main Window
-
-```text
-Add your screenshots here
-```
-
-```markdown
-![Main Window](screenshots/main_window.png)
-```
-
-### Example Tree
-
-```markdown
-![Tree Example](screenshots/tree_example.png)
-```
-
----
-
 ## 🏗 Architecture
 
 ```text
@@ -307,9 +287,410 @@ This project demonstrates:
 ## 📚 References
 
 - Database System Concepts — Silberschatz
-- Introduction to Algorithms (CLRS)
-- Database Management Systems — Raghu Ramakrishnan
+# 🔬 Implementation Details
 
+This section describes the internal architecture and implementation of the project.
+
+---
+
+## Core Architecture
+
+The application follows a layered architecture:
+
+```text
+┌─────────────────────────┐
+│       User Actions      │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│      BPlusTreeApp       │
+│   (GUI Controller)      │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│       BPlusTree         │
+│  (Data Structure Layer) │
+└────────────┬────────────┘
+             │
+             ▼
+┌─────────────────────────┐
+│       BPlusNode         │
+│    (Tree Storage)       │
+└─────────────────────────┘
+```
+
+The GUI layer is completely separated from the data structure implementation, allowing the B+ Tree to be reused independently of the visualization system.
+
+---
+
+# 📦 Module Breakdown
+
+## main.py
+
+Application bootstrapper.
+
+Responsibilities:
+
+- Dependency checking
+- Automatic PyQt6 installation
+- Startup management
+- Error handling
+
+Execution starts from:
+
+```python
+main()
+```
+
+which eventually launches:
+
+```python
+run()
+```
+
+from the GUI module.
+
+---
+
+## bplustree.py
+
+Contains the complete implementation of the B+ Tree.
+
+---
+
+### BPlusNode
+
+Represents a single node inside the tree.
+
+#### Attributes
+
+| Attribute | Purpose |
+|------------|------------|
+| keys | Stores keys contained in the node |
+| children | Child references for internal nodes |
+| parent | Reference to parent node |
+| is_leaf | Indicates leaf/internal node |
+| next | Points to next leaf node |
+
+---
+
+### BPlusTree
+
+Represents the entire B+ Tree.
+
+#### Key Design Principles
+
+- Data exists only in leaf nodes.
+- Internal nodes contain routing keys.
+- All leaves remain at the same depth.
+- Leaf nodes form a linked list.
+- Tree height remains balanced.
+
+---
+
+# 🔍 Search Algorithm
+
+Search operation begins at the root and follows routing keys until a leaf node is reached.
+
+```text
+search(key)
+    │
+    ▼
+_find_leaf(key)
+    │
+    ▼
+Locate Target Leaf
+    │
+    ▼
+Check Leaf Keys
+```
+
+### Complexity
+
+```text
+O(log n)
+```
+
+---
+
+# ➕
+
+# Insertion Algorithm
+
+Insertion follows the standard B+ Tree procedure.
+
+```text
+insert(key)
+    │
+    ▼
+_find_leaf()
+    │
+    ▼
+_insert_into_leaf()
+    │
+    ▼
+Overflow?
+    │
+ ┌──┴───┐
+ │ Yes  │
+ └──┬───┘
+    ▼
+_split_leaf()
+    │
+    ▼
+_insert_into_parent()
+    │
+    ▼
+_split_internal()
+```
+
+---
+
+## Leaf Split
+
+When a leaf node exceeds its maximum capacity:
+
+1. A new leaf node is created.
+2. Keys are divided into two halves.
+3. Leaf linked-list pointers are updated.
+4. The first key of the new leaf is promoted upward.
+
+---
+
+## Internal Node Split
+
+When an internal node overflows:
+
+1. The middle key is selected.
+2. The middle key is promoted.
+3. Two internal nodes are produced.
+4. Child-parent references are updated.
+
+---
+
+# ➖ Deletion Algorithm
+
+Deletion includes rebalancing operations.
+
+```text
+delete(key)
+    │
+    ▼
+Remove Key
+    │
+    ▼
+Underflow?
+    │
+ ┌──┴───┐
+ │ Yes  │
+ └──┬───┘
+    ▼
+Borrow?
+    │
+ ┌──┴───┐
+ │ No   │
+ └──┬───┘
+    ▼
+Merge
+```
+
+---
+
+## Underflow Handling
+
+The implementation attempts the following strategies:
+
+### 1. Borrow from Right Sibling
+
+```text
+Current Node ← Right Sibling
+```
+
+---
+
+### 2. Borrow from Left Sibling
+
+```text
+Current Node ← Left Sibling
+```
+
+---
+
+### 3. Merge Nodes
+
+If borrowing is impossible:
+
+```text
+Node A + Node B
+        ↓
+Merged Node
+```
+
+Parent keys are updated accordingly.
+
+---
+
+# 🌿 Leaf-Level Linked List
+
+One of the most important properties of B+ Trees is that all leaf nodes are linked together.
+
+The implementation maintains this through:
+
+```python
+node.next
+```
+
+references.
+
+Visualization displays these connections using dashed pink arrows.
+
+```text
+[1, 5]
+    ↓
+[10, 15]
+    ↓
+[20, 25]
+    ↓
+[30, 35]
+```
+
+This structure enables efficient range queries and sequential traversal.
+
+---
+
+# 🎨 Visualization Engine
+
+The graphical renderer is implemented inside:
+
+```python
+TreeCanvas
+```
+
+using:
+
+```python
+QPainter
+```
+
+---
+
+## Rendering Pipeline
+
+```text
+Tree Layout
+     │
+     ▼
+Compute Positions
+     │
+     ▼
+Draw Edges
+     │
+     ▼
+Draw Leaf Links
+     │
+     ▼
+Draw Nodes
+     │
+     ▼
+Apply Highlights
+```
+
+---
+
+## Layout Strategy
+
+The tree is positioned using a bottom-up approach.
+
+### Step 1
+
+Assign x-coordinates to leaf nodes.
+
+### Step 2
+
+Position internal nodes at the center of their children.
+
+```text
+      Parent
+        │
+   ┌────┴────┐
+ Child    Child
+```
+
+This guarantees a visually balanced tree.
+
+---
+
+# 🔄 GUI–Tree Interaction Flow
+
+Every user operation follows the same pattern:
+
+```text
+User Input
+     │
+     ▼
+GUI Event
+     │
+     ▼
+BPlusTree Operation
+     │
+     ▼
+Generate Layout
+     │
+     ▼
+Canvas Redraw
+```
+
+Example:
+
+```text
+Insert Button
+      │
+      ▼
+tree.insert(key)
+      │
+      ▼
+get_tree_layout()
+      │
+      ▼
+update_tree()
+      │
+      ▼
+paintEvent()
+```
+
+---
+
+# 📊 Complexity Analysis
+
+| Operation | Complexity |
+|------------|------------|
+| Search | O(log n) |
+| Insert | O(log n) |
+| Delete | O(log n) |
+| Leaf Traversal | O(k) |
+| Tree Rendering | O(n) |
+
+Where:
+
+- `n` = total number of stored keys
+- `k` = number of traversed keys
+
+---
+
+# 🎯 Educational Goals
+
+This implementation demonstrates:
+
+- B+ Tree construction
+- Balanced search trees
+- Database indexing concepts
+- Overflow handling
+- Underflow handling
+- Leaf linked-list organization
+- Graphical algorithm visualization
+- Object-Oriented Design principles
 ---
 
 ## 📄 License
